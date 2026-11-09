@@ -33,7 +33,7 @@ Have you ever been out farming and wondered, *"Wait, which recipe did I need thi
 * `/frt` - Show help and current status.
 
 ### 📥 Installation
-1. Download the latest version from [CurseForge](https://www.curseforge.com/wow/addons/favorite-reagent-tracker) or [GitHub Releases](https://github.com/Zalmat/FavoriteReagentTracker/releases).
+1. Download the latest version from [CurseForge](https://www.curseforge.com/wow/addons/favoritereagenttracker) or [GitHub Releases](https://github.com/Zalmat/FavoriteReagentTracker/releases).
 2. Extract the `FavoriteReagentTracker` folder into your `World of Warcraft/_retail_/Interface/AddOns/` directory.
 3. Restart the game or type `/reload`.
 
@@ -64,7 +64,7 @@ Have you ever been out farming and wondered, *"Wait, which recipe did I need thi
 * `/frt` - Показать справку и текущий статус.
 
 ### 📥 Установка
-1. Скачайте последнюю версию с [CurseForge](https://www.curseforge.com/wow/addons/favorite-reagent-tracker) или [GitHub Releases](https://github.com/Zalmat/FavoriteReagentTracker/releases).
+1. Скачайте последнюю версию с [CurseForge](https://www.curseforge.com/wow/addons/favoritereagenttracker) или [GitHub Releases](https://github.com/Zalmat/FavoriteReagentTracker/releases).
 2. Распакуйте папку `FavoriteReagentTracker` в директорию `World of Warcraft/_retail_/Interface/AddOns/`.
 3. Перезапустите игру или введите `/reload`.
 
