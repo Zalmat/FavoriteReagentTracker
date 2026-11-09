@@ -1,8 +1,9 @@
 ## Interface: 16001
 ## Title: FavoriteReagentTracker
-## Notes: Показывает в тултипе, для какого избранного рецепта нужен предмет.
-## Version: 1.0
+## Notes: Shows which favorite recipe requires an item in its tooltip./Показывает в тултипе, для какого избранного рецепта нужен предмет.
+## Version: @project-version@
 ## Author: Zalmat
 ## SavedVariables: FavoriteReagentTrackerDB
+## X-Curse-Project-ID: 1794258
 
 FavoriteReagentTracker.lua
