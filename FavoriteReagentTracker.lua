@@ -132,14 +132,27 @@ FavoriteReagentTracker:SetScript("OnEvent", function(self, event, ...)
     end
 end)
 
-local function OnTooltipSetItem(tooltip)
-    local name = tooltip:GetItem()
-    if not name then return end
+-- Обработчик тултипа, полностью адаптированный под современный движок WoW Forever
+local function OnTooltipSetItem(tooltip, data)
+    if not tooltip or tooltip:IsForbidden() then return end
     if not FavoriteReagentTrackerDB or not FavoriteReagentTrackerDB.ingredients then return end
+
+    -- В Retail-движке Forever метод GetItem() возвращает: name (строка), link (строка)
+    local name = tooltip:GetItem()
+    
+    -- ЗАЩИТА: Если это фрейм лут-ролла или кастомное окно, GetItem() может вернуть таблицу или nil
+    if not name or type(name) ~= "string" or name == "" then return end
     
     local found = false
-    local addedRecipes = {} -- Локальная таблица для защиты от дублей в тултипе
-    local cleanName = name:match("^[^|]+"):trim()
+    local addedRecipes = {} 
+    
+    -- Исправленная очистка строки: используем глобальный метод string.match вместо двоеточия
+    local cleanName = string.match(name, "^[^|]+")
+    if cleanName then
+        cleanName = strtrim(cleanName)
+    else
+        cleanName = name
+    end
     
     for profName, profTable in pairs(FavoriteReagentTrackerDB.ingredients) do
         local recipesList = profTable[cleanName] or profTable[name]
@@ -152,7 +165,6 @@ local function OnTooltipSetItem(tooltip)
             end
             
             for _, recipeName in ipairs(recipesList) do
-                -- Проверяем, не добавили ли мы уже этот рецепт
                 if not addedRecipes[recipeName] then
                     tooltip:AddLine("  |cFF888888> " .. recipeName .. " (" .. profName .. ")|r")
                     addedRecipes[recipeName] = true
@@ -162,24 +174,19 @@ local function OnTooltipSetItem(tooltip)
     end
 end
 
--- Подключаем тултип с защитой (ТОЛЬКО ОДИН РАЗ!)
+-- РЕГИСТРАЦИЯ ТУЛТИПА ПО СТАНДАРТУ RETAIL/FOREVER (Единственно верный способ для движка 1.60.x)
 if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
-    TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, function(tooltip, data)
-        -- Защита от изменения тултипов в запрещенных зонах
-        if tooltip:IsForbidden() then return end
-        OnTooltipSetItem(tooltip)
-    end)
+    TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, OnTooltipSetItem)
 else
+    -- Резервный фолбэк на случай непредвиденных модификаций интерфейса сервера
     GameTooltip:HookScript("OnTooltipSetItem", OnTooltipSetItem)
     ItemRefTooltip:HookScript("OnTooltipSetItem", OnTooltipSetItem)
 end
 
-
-
 -- Слэш-команда для управления настройками
 SLASH_FAVORITEREAGENTTRACKER1 = "/frt"
 SlashCmdList["FAVORITEREAGENTTRACKER"] = function(msg)
-    local cmd = msg:lower():trim()
+    local cmd = strtrim(string.lower(msg or ""))
     
     if cmd == "on" then
         FavoriteReagentTrackerDB.showMessages = true
@@ -188,7 +195,6 @@ SlashCmdList["FAVORITEREAGENTTRACKER"] = function(msg)
         FavoriteReagentTrackerDB.showMessages = false
         print("|cFF00FF00FavoriteReagentTracker:|r Сообщения в чат |cFFFF0000ВЫКЛЮЧЕНЫ|r.")
     else
-        -- Если ввели просто /frt или неизвестную команду, показываем статус и справку
         local status = FavoriteReagentTrackerDB.showMessages and "|cFF00FF00ВКЛЮЧЕНЫ|r" or "|cFFFF0000ВЫКЛЮЧЕНЫ|r"
         print("|cFF00FF00FavoriteReagentTracker|r (v1.0)")
         print("Текущий статус сообщений: " .. status)
