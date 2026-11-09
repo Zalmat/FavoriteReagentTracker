@@ -1,0 +1,8 @@
+## Interface: 16001
+## Title: FavoriteReagentTracker
+## Notes: Показывает в тултипе, для какого избранного рецепта нужен предмет.
+## Version: 1.0
+## Author: Zalmat
+## SavedVariables: FavoriteReagentTrackerDB
+
+FavoriteReagentTracker.lua
