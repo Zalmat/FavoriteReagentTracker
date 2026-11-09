@@ -5,10 +5,8 @@ on:
     tags:
       - 'v*'
 
-# ДОБАВЬ ЭТИ ДВЕ СТРОКИ:
 permissions:
-  contents: write
-
+  contents: write  
 jobs:
   release:
     runs-on: ubuntu-latest
