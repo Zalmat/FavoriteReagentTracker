@@ -138,6 +138,7 @@ local function OnTooltipSetItem(tooltip)
     if not FavoriteReagentTrackerDB or not FavoriteReagentTrackerDB.ingredients then return end
     
     local found = false
+    local addedRecipes = {} -- Локальная таблица для защиты от дублей в тултипе
     local cleanName = name:match("^[^|]+"):trim()
     
     for profName, profTable in pairs(FavoriteReagentTrackerDB.ingredients) do
@@ -145,23 +146,35 @@ local function OnTooltipSetItem(tooltip)
         
         if type(recipesList) == "table" and #recipesList > 0 then
             if not found then
+                tooltip:AddLine(" ")
                 tooltip:AddLine("• |cFF00FF00Нужен для Избранных рецептов:|r")
                 found = true
             end
             
             for _, recipeName in ipairs(recipesList) do
-                tooltip:AddLine("  |cFF888888> " .. recipeName .. " (" .. profName .. ")|r")
+                -- Проверяем, не добавили ли мы уже этот рецепт
+                if not addedRecipes[recipeName] then
+                    tooltip:AddLine("  |cFF888888> " .. recipeName .. " (" .. profName .. ")|r")
+                    addedRecipes[recipeName] = true
+                end
             end
         end
     end
 end
 
+-- Подключаем тултип с защитой (ТОЛЬКО ОДИН РАЗ!)
 if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
-    TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, OnTooltipSetItem)
+    TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, function(tooltip, data)
+        -- Защита от изменения тултипов в запрещенных зонах
+        if tooltip:IsForbidden() then return end
+        OnTooltipSetItem(tooltip)
+    end)
 else
     GameTooltip:HookScript("OnTooltipSetItem", OnTooltipSetItem)
     ItemRefTooltip:HookScript("OnTooltipSetItem", OnTooltipSetItem)
 end
+
+
 
 -- Слэш-команда для управления настройками
 SLASH_FAVORITEREAGENTTRACKER1 = "/frt"
