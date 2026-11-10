@@ -137,6 +137,9 @@ local function OnTooltipSetItem(tooltip, data)
     if not tooltip or tooltip:IsForbidden() then return end
     if not FavoriteReagentTrackerDB or not FavoriteReagentTrackerDB.ingredients then return end
 
+    -- ЗАЩИТА: Если у тултипа нет метода GetItem (как на том зеленом шмоте), тихо выходим
+    if type(tooltip.GetItem) ~= "function" then return end
+
     -- В Retail-движке Forever метод GetItem() возвращает: name (строка), link (строка)
     local name = tooltip:GetItem()
     
@@ -146,7 +149,7 @@ local function OnTooltipSetItem(tooltip, data)
     local found = false
     local addedRecipes = {} 
     
-    -- Исправленная очистка строки: используем глобальный метод string.match вместо двоеточия
+    -- Исправленная очистка строки
     local cleanName = string.match(name, "^[^|]+")
     if cleanName then
         cleanName = strtrim(cleanName)
