@@ -1,6 +1,6 @@
 # FavoriteReagentTracker
 
-[![CurseForge](https://img.shields.io/badge/CurseForge-Download-orange?style=for-the-badge&logo=curseforge)](https://www.curseforge.com/wow/addons/favorite-reagent-tracker)
+[![CurseForge](https://img.shields.io/badge/CurseForge-Download-orange?style=for-the-badge&logo=curseforge)](https://www.curseforge.com/wow/addons/favoritereagenttracker)
 [![GitHub release](https://img.shields.io/github/v/release/Zalmat/FavoriteReagentTracker?style=for-the-badge&logo=github)](https://github.com/Zalmat/FavoriteReagentTracker/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
