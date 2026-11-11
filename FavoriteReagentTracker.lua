@@ -1,6 +1,7 @@
 local FavoriteReagentTracker = CreateFrame("Frame")
 FavoriteReagentTracker:RegisterEvent("ADDON_LOADED")
 FavoriteReagentTracker:RegisterEvent("TRADE_SKILL_SHOW")
+FavoriteReagentTracker:RegisterEvent("TRADE_SKILL_DATA_SOURCE_CHANGED")
 
 local function ScanRecipes()
     if not C_TradeSkillUI or not C_TradeSkillUI.GetRecipeInfo then return end
@@ -121,8 +122,8 @@ FavoriteReagentTracker:SetScript("OnEvent", function(self, event, ...)
                 print("|cFF00FF00FavoriteReagentTracker загружен!|r")
             end
         end
-    elseif event == "TRADE_SKILL_SHOW" then
-        -- Задержка 0.5 сек от глюков быстрого переключения
+    elseif event == "TRADE_SKILL_SHOW" or event == "TRADE_SKILL_DATA_SOURCE_CHANGED" then
+        -- Задержка 0.5 сек от глюков быстрого переключения и обновлений от TSM
         C_Timer.After(0.5, function()
             local ok, err = pcall(ScanRecipes)
             if not ok and FavoriteReagentTrackerDB.showMessages then
@@ -132,56 +133,80 @@ FavoriteReagentTracker:SetScript("OnEvent", function(self, event, ...)
     end
 end)
 
--- Обработчик тултипа, полностью адаптированный под современный движок WoW Forever
+-- Обработчик тултипа, полностью адаптированный под современный движок WoW Forever и TSM
 local function OnTooltipSetItem(tooltip, data)
     if not tooltip or tooltip:IsForbidden() then return end
     if not FavoriteReagentTrackerDB or not FavoriteReagentTrackerDB.ingredients then return end
-
-    -- ЗАЩИТА: Если у тултипа нет метода GetItem (как на том зеленом шмоте), тихо выходим
     if type(tooltip.GetItem) ~= "function" then return end
 
-    -- В Retail-движке Forever метод GetItem() возвращает: name (строка), link (строка)
     local name = tooltip:GetItem()
-    
-    -- ЗАЩИТА: Если это фрейм лут-ролла или кастомное окно, GetItem() может вернуть таблицу или nil
     if not name or type(name) ~= "string" or name == "" then return end
     
-    local found = false
-    local addedRecipes = {} 
-    
-    -- Исправленная очистка строки
     local cleanName = string.match(name, "^[^|]+")
-    if cleanName then
-        cleanName = strtrim(cleanName)
-    else
-        cleanName = name
-    end
+    if cleanName then cleanName = strtrim(cleanName) else cleanName = name end
+    
+    local linesToAdd = {}
+    local addedRecipes = {}
     
     for profName, profTable in pairs(FavoriteReagentTrackerDB.ingredients) do
         local recipesList = profTable[cleanName] or profTable[name]
-        
         if type(recipesList) == "table" and #recipesList > 0 then
-            if not found then
-                tooltip:AddLine(" ")
-                tooltip:AddLine("• |cFF00FF00Нужен для Избранных рецептов:|r")
-                found = true
-            end
-            
             for _, recipeName in ipairs(recipesList) do
                 if not addedRecipes[recipeName] then
-                    tooltip:AddLine("  |cFF888888> " .. recipeName .. " (" .. profName .. ")|r")
+                    table.insert(linesToAdd, {recipe = recipeName, prof = profName})
                     addedRecipes[recipeName] = true
                 end
             end
         end
     end
+    
+    if #linesToAdd > 0 then
+        -- Задержка для защиты от TSM/Mastercraft, которые могут перерисовать тултип
+        C_Timer.After(0, function()
+            if not tooltip or tooltip:IsForbidden() or not tooltip:IsShown() then return end
+            if type(tooltip.GetItem) ~= "function" then return end
+            
+            local currentName = tooltip:GetItem()
+            if currentName ~= name then return end
+
+            -- ЗАЩИТА ОТ ДУБЛЕЙ (работает и для именованных, и для анонимных тултипов)
+            if type(tooltip.NumLines) == "function" then
+                local tooltipName = tooltip:GetName()
+                local numLines = tooltip:NumLines()
+                
+                -- Ищем наш заголовок в последних 10 строках
+                for i = numLines, math.max(1, numLines - 10), -1 do
+                    local line
+                    -- Если тултип именованный (GameTooltip), берем из _G
+                    if tooltipName and _G[tooltipName .. "TextLeft" .. i] then
+                        line = _G[tooltipName .. "TextLeft" .. i]
+                    -- Если анонимный (кастомный), берем из LeftLines
+                    elseif tooltip.LeftLines and tooltip.LeftLines[i] then
+                        line = tooltip.LeftLines[i]
+                    end
+                    
+                    local text = line and line:GetText()
+                    if text and string.find(text, "Нужен для Избранных рецептов", 1, true) then
+                        return -- Текст уже есть, выходим!
+                    end
+                end
+            end
+            
+            -- Добавляем строки, если их еще нет
+            tooltip:AddLine(" ")
+            tooltip:AddLine("• |cFF00FF00Нужен для Избранных рецептов:|r")
+            for _, lineData in ipairs(linesToAdd) do
+                tooltip:AddLine("  |cFF888888> " .. lineData.recipe .. " (" .. lineData.prof .. ")|r")
+            end
+            tooltip:Show()
+        end)
+    end
 end
 
--- РЕГИСТРАЦИЯ ТУЛТИПА ПО СТАНДАРТУ RETAIL/FOREVER (Единственно верный способ для движка 1.60.x)
+-- Регистрация тултипа
 if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
     TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, OnTooltipSetItem)
 else
-    -- Резервный фолбэк на случай непредвиденных модификаций интерфейса сервера
     GameTooltip:HookScript("OnTooltipSetItem", OnTooltipSetItem)
     ItemRefTooltip:HookScript("OnTooltipSetItem", OnTooltipSetItem)
 end
