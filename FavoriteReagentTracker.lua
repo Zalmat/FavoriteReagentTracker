@@ -137,9 +137,9 @@ end)
 local function OnTooltipSetItem(tooltip, data)
     if not tooltip or tooltip:IsForbidden() then return end
     if not FavoriteReagentTrackerDB or not FavoriteReagentTrackerDB.ingredients then return end
-    if type(tooltip.GetItem) ~= "function" then return end
 
-    local name = tooltip:GetItem()
+    -- Используем TooltipUtil для получения данных предмета
+    local name, link = TooltipUtil.GetDisplayedItem(tooltip)
     if not name or type(name) ~= "string" or name == "" then return end
     
     local cleanName = string.match(name, "^[^|]+")
@@ -161,45 +161,31 @@ local function OnTooltipSetItem(tooltip, data)
     end
     
     if #linesToAdd > 0 then
-        -- Задержка для защиты от TSM/Mastercraft, которые могут перерисовать тултип
-        C_Timer.After(0, function()
-            if not tooltip or tooltip:IsForbidden() or not tooltip:IsShown() then return end
-            if type(tooltip.GetItem) ~= "function" then return end
-            
-            local currentName = tooltip:GetItem()
-            if currentName ~= name then return end
-
-            -- ЗАЩИТА ОТ ДУБЛЕЙ (работает и для именованных, и для анонимных тултипов)
-            if type(tooltip.NumLines) == "function" then
-                local tooltipName = tooltip:GetName()
-                local numLines = tooltip:NumLines()
-                
-                -- Ищем наш заголовок в последних 10 строках
-                for i = numLines, math.max(1, numLines - 10), -1 do
-                    local line
-                    -- Если тултип именованный (GameTooltip), берем из _G
-                    if tooltipName and _G[tooltipName .. "TextLeft" .. i] then
-                        line = _G[tooltipName .. "TextLeft" .. i]
-                    -- Если анонимный (кастомный), берем из LeftLines
-                    elseif tooltip.LeftLines and tooltip.LeftLines[i] then
-                        line = tooltip.LeftLines[i]
-                    end
-                    
-                    local text = line and line:GetText()
-                    if text and string.find(text, "Нужен для Избранных рецептов", 1, true) then
-                        return -- Текст уже есть, выходим!
-                    end
-                end
+        -- СИНХРОННОЕ добавление строк, без C_Timer.After
+        -- Проверка на дубли (оставляем, но она должна работать и так)
+        local tooltipName = tooltip:GetName()
+        local numLines = tooltip:NumLines()
+        
+        for i = numLines, math.max(1, numLines - 10), -1 do
+            local line
+            if tooltipName and _G[tooltipName .. "TextLeft" .. i] then
+                line = _G[tooltipName .. "TextLeft" .. i]
+            elseif tooltip.LeftLines and tooltip.LeftLines[i] then
+                line = tooltip.LeftLines[i]
             end
             
-            -- Добавляем строки, если их еще нет
-            tooltip:AddLine(" ")
-            tooltip:AddLine("• |cFF00FF00Нужен для Избранных рецептов:|r")
-            for _, lineData in ipairs(linesToAdd) do
-                tooltip:AddLine("  |cFF888888> " .. lineData.recipe .. " (" .. lineData.prof .. ")|r")
+            local text = line and line:GetText()
+            if text and string.find(text, "Нужен для Избранных рецептов", 1, true) then
+                return -- Текст уже есть, выходим
             end
-            tooltip:Show()
-        end)
+        end
+        
+        tooltip:AddLine(" ")
+        tooltip:AddLine("• |cFF00FF00Нужен для Избранных рецептов:|r")
+        for _, lineData in ipairs(linesToAdd) do
+            tooltip:AddLine("  |cFF888888> " .. lineData.recipe .. " (" .. lineData.prof .. ")|r")
+        end
+        -- tooltip:Show() вызывать не нужно, тултип уже показан движком
     end
 end
 
